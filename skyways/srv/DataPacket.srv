@@ -1,0 +1,11 @@
+int64 vehicle_id
+geometry_msgs/Vector3 start_position
+geometry_msgs/Vector3 end_position
+float64 start_time
+---
+int64 vehicle_id
+int64 lane_id
+float64 vel_mag
+float64 geofence_radius
+float64 corridor_radius
+geometry_msgs/PoseArray waypoints
