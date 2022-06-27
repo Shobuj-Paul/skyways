@@ -24,6 +24,16 @@ find_package(rosidl_default_generators REQUIRED)
 
 ament_export_dependencies(rosidl_default_runtime)
 
+add_executable(drone_server src/drone_server.cpp)
+ament_target_dependencies(drone_server
+  rclcpp geometry_msgs std_msgs rosidl_default_runtime
+)
+
+add_executable(drone_client src/drone_client.cpp)
+ament_target_dependencies(drone_client
+  rclcpp geometry_msgs std_msgs rosidl_default_runtime
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/DataPacket.srv"
   DEPENDENCIES geometry_msgs std_msgs
@@ -39,5 +49,15 @@ if(BUILD_TESTING)
   #set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+rosidl_target_interfaces(drone_server  
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+rosidl_target_interfaces(drone_client  
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
+install(TARGETS drone_server
+ DESTINATION lib/${PROJECT_NAME})
+install(TARGETS drone_client
+ DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
