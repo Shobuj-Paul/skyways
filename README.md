@@ -42,20 +42,22 @@ mkdir -p catkin_ws/src
 mkdir -p colcon_ws/src
 ```
 
-- Clone ROS 1 repository in `catkin_ws/src` and follow these instructions to build your workspace.
+- Clone the repository and checkout the `ros-1` branch in `catkin_ws/src` and follow these instructions to build your workspace.
 ```bash
 source /opt/ros/noetic/setup.bash
 cd ~/catkin_ws/src
-git clone https://github.com/Shobuj-Paul/skyways_ros1.git
+git clone https://github.com/Shobuj-Paul/skyways.git
+git checkout ros-1
 cd ..
 catkin build
 ```
 
-- Clone ROS 2 repository in `colcon_ws/src` and follow these instructions to build your workspace.
+- Clone the repository and checkout `ros-2` branch (default branch so you can leave as it is) in `colcon_ws/src` and follow these instructions to build your workspace.
 ```bash
 source /opt/ros/foxy/setup.bash
 cd ~/colcon_ws/src
-git clone https://github.com/Shobuj-Paul/skyways_ros2.git
+git clone https://github.com/Shobuj-Paul/skyways.git
+git checkout ros-2
 cd ..
 colcon build --symlink-install
 ```
