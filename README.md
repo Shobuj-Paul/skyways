@@ -66,8 +66,8 @@ colcon build --symlink-install
 
 - Add these aliases to your ~/.bashrc file. With this you will be able to source your workspaces (both overlay and underlay) with commands `noetic` (for ROS 1 and catkin_ws) and `foxy` (for ROS 2 and colcon_ws).
 ```bash
-alias foxy='source ~/colcon_ws/src/skyways_ros2/scripts/foxy.sh'
-alias noetic='source ~/catkin_ws/src/skyways_ros1/scripts/noetic.sh'
+alias foxy='source ~/colcon_ws/src/skyways/scripts/foxy.sh'
+alias noetic='source ~/catkin_ws/src/skyways/scripts/noetic.sh'
 ```
 
 - Set an environment variable in your `~/.bashrc` file to avoid explicity mentioning it everytime you run you client or control codes. 
