@@ -16,6 +16,11 @@ sudo apt install python3-catkin-tools -y
 sudo apt install python3-colcon-common-extensions -y
 ```
 
+- Install `ros1_bridge` for ROS 2 - ROS 1 message conversions
+```bash
+sudo apt install ros-foxy-ros1-bridge
+```
+
 - Install MAVROS for ROS 1 communication with PX4 Autopilot.
 ```bash
 sudo apt install ros-noetic-mavros ros-noetic-mavros-extras
@@ -73,3 +78,36 @@ echo $DRONE_ID
 ```
 
 ## Drone Flight
+> _Currently work going on to integrate a startup script to avoid going into all this trouble_
+
+- Open up 4 terminal windows.
+- Source ROS 1. Start MAVROS connection to PX4. Make sure the PX4 controller (Pixhawk or Cube) is connected via serial to USB port on the onboard computer.
+```bash
+noetic
+sudo chmod 777 /dev/ttyACM0
+roslaunch skyways px4.launch ID:=$DRONE_ID fcu_url:="/dev/ttyACM0"
+```
+- Source ROS 1. Run your control code.
+```bash
+noetic
+rosrun skyways setpoint_mission $DRONE_ID
+```
+- Source ROS 1. Source ROS 2. Run `ros1_bridge`.
+```bash
+noetic
+foxy
+ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
+```
+- Source ROS 2. Run ROS 2 client for sending flight request.
+```bash
+foxy
+ros2 run skyways drone_client $DRONE_ID 0.0 0.0 0.0 0.0 0.0 0.0
+```
+The last six arguments are the x-y-z components of first the start and then end points.
+
+## Ground Station Command
+- Start the ROS 2 server on Ground Station.
+```bash
+foxy
+ros2 run skyways drone_server
+```
