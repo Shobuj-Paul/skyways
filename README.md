@@ -108,8 +108,19 @@ ros2 run skyways drone_client $DRONE_ID 0.0 0.0 0.0 0.0 0.0 0.0
 The last six arguments are the x-y-z components of first the start and then end points.
 
 ## Ground Station Command
+- Clone the repository in a ROS 2 workspace on your ground station and build.
+```bash
+source /opt/ros/foxy/setup.bash
+mkdir -p colcon_ws/src
+cd colcon_ws/src
+git clone https://github.com/Shobuj-Paul/skyways.git
+cd ..
+colcon build --symlink-install
+```
 - Start the ROS 2 server on Ground Station.
 ```bash
 foxy
 ros2 run skyways drone_server
 ```
+
+## Development

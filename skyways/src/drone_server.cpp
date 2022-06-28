@@ -1,6 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <skyways/srv/data_packet.hpp>
 
+//Callback function for processing the request data packet and generating the response data packet.
 void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std::shared_ptr<skyways::srv::DataPacket::Response> response)
 {
   if (request->vehicle_id == "drone1") {
@@ -58,15 +59,15 @@ void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std:
 
 int main(int argc, char **argv)
 {
-  rclcpp::init(argc, argv);
+  rclcpp::init(argc, argv); //Initialize the ROS2 node.
 
-  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("drone_server");
+  std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("drone_server"); //Create node object.
 
   rclcpp::Service<skyways::srv::DataPacket>::SharedPtr service =             
-    node->create_service<skyways::srv::DataPacket>("drone_service",  &data);
+    node->create_service<skyways::srv::DataPacket>("drone_service",  &data); // Create service object with callback function.
 
   RCLCPP_INFO(rclcpp::get_logger("drone_server"), "Ready to send data packet.");
 
-  rclcpp::spin(node);
-  rclcpp::shutdown();
+  rclcpp::spin(node); //Spin the node once.
+  rclcpp::shutdown(); //Shutdown the node.
 }
