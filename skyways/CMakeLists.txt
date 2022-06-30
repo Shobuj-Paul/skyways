@@ -119,7 +119,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-# include
+include
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -141,6 +141,14 @@ include_directories(
 add_executable(setpoint_mission src/setpoint_mission.cpp)
 target_link_libraries(setpoint_mission ${catkin_LIBRARIES})
 add_dependencies(setpoint_mission ${catkin_EXPORTED_TARGETS})
+
+add_executable(geofence_follow src/geofence_follow.cpp)
+target_link_libraries(geofence_follow ${catkin_LIBRARIES})
+add_dependencies(geofence_follow ${catkin_EXPORTED_TARGETS})
+
+add_executable(geofence_rectangle src/geofence_rectangle.cpp)
+target_link_libraries(geofence_rectangle ${catkin_LIBRARIES})
+add_dependencies(geofence_rectangle ${catkin_EXPORTED_TARGETS})
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the

@@ -169,11 +169,6 @@ int main(int argc, char **argv){
                 ros::spinOnce();
                 rate.sleep();
             }
-            {
-                local_pos_pub.publish(pose);
-                ros::spinOnce();
-                rate.sleep();
-            }
             ROS_INFO("Setpoint reached.");
         }
         ROS_INFO("All setpoints reached.");
