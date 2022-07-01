@@ -82,38 +82,46 @@ class StateMonitor //For state feedbacks
     public:
     mavros_msgs::State state;
     geometry_msgs::PoseArray waypoints;
-    nav_msgs::Odometry odom;
-    sensor_msgs::NavSatFix gps;
     geometry_msgs::TwistStamped velocity;
     geometry_msgs::Vector3Stamped force, fd_bck;
-    double xq, yq, zq, vxq, vyq, vzq, phi_q, theta_q, psi_q;
+    geometry_msgs::Vector3 r_q, v_q;
+    double phi_q, theta_q, psi_q;
+    std::array<double, 2> result, WGS84Position, WGS84Reference;
 
 
-    void state_cb(const mavros_msgs::State::ConstPtr& msg){
+    void state_cb(const mavros_msgs::State::ConstPtr& msg)
+    {
         state = *msg; //state feedback
     }
 
-    void odom_cb(const nav_msgs::Odometry::ConstPtr& quad_pos)
+    void odom_cb(const nav_msgs::Odometry::ConstPtr& msg)
     {
-        force.header = quad_pos->header;
-        fd_bck.header = quad_pos->header;
-        //xq = quad_pos.pose.pose.position.x;  
-        //yq = quad_pos.pose.pose.position.y;
-        zq = quad_pos->pose.pose.position.z;
+        force.header = msg->header;
+        fd_bck.header = msg->header;
+        v_q.z = msg->pose.pose.position.z;
         tf::Quaternion quatq;
-        tf::quaternionMsgToTF(quad_pos->pose.pose.orientation, quatq);
+        tf::quaternionMsgToTF(msg->pose.pose.orientation, quatq);
         tf::Matrix3x3(quatq).getRPY(phi_q, theta_q, psi_q);
     }
 
-    void gps_cb(const sensor_msgs::NavSatFix::ConstPtr& msg){
-        gps = *msg; //gps feedback
+    void gps_cb(const sensor_msgs::NavSatFix::ConstPtr& msg)
+    {
+        WGS84Position = {msg->latitude, msg->longitude};
+        result = {wgs84::toCartesian(WGS84Reference, WGS84Position)};
+        ROS_INFO("%f %f", result[0], result[1]);
+        r_q.x = result[0]; 
+        r_q.y = result[1];
     }
 
-    void velocity_cb(const geometry_msgs::TwistStamped::ConstPtr& msg){
-        velocity = *msg; //velocity feedback
+    void velocity_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
+    {
+        v_q.x = msg->twist.linear.x; 
+        v_q.y = msg->twist.linear.y; 
+        v_q.z = msg->twist.linear.z;
     }
 
-    void waypoints_cb(const geometry_msgs::PoseArray::ConstPtr& msg){
+    void waypoints_cb(const geometry_msgs::PoseArray::ConstPtr& msg)
+    {
         waypoints = *msg; //getting setpoints
     }
 };

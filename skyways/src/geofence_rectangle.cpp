@@ -89,19 +89,19 @@ int main(int argc, char **argv){
   {
     ROS_ERROR("Usage: rosrun skyways geofence_rectangle <vehicle_id>");
   }
-  std::string vehicle_id = argv[1];
+  std::string id = argv[1];
 
-  quad_pos = n.subscribe("/mavros/global_position/local", 1, PosCallback);
-  quad_Gpos = n.subscribe("/mavros/global_position/global", 1, GposCallback);
-  quad_twist = n.subscribe("/mavros/local_position/velocity_local", 1, TwistCallback);
-  state_sub = n.subscribe<mavros_msgs::State>("mavros/state", 100, state_cb);
-  GFswitch_sub = n.subscribe<std_msgs::Bool>("gfswitch", 100, GFswitch_Callback);
-  mav_pub = n.advertise<mavros_msgs::AttitudeTarget>("mavros/setpoint_raw/attitude", 10);
-  control_pub = n.advertise<geometry_msgs::Vector3Stamped>("control_force", 10);
-  feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>("feedback", 10);
-  arming_client = n.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
-  set_mode_client = n.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
-  waypoint_sub = n.subscribe<geometry_msgs::PoseArray>(vehicle_id + "/waypoints_publisher", 10, waypoint_cb);
+  quad_pos = n.subscribe(id + "/mavros/global_position/local", 1, PosCallback);
+  quad_Gpos = n.subscribe(id + "/mavros/global_position/global", 1, GposCallback);
+  quad_twist = n.subscribe(id + "/mavros/local_position/velocity_local", 1, TwistCallback);
+  state_sub = n.subscribe<mavros_msgs::State>(id + "/mavros/state", 100, state_cb);
+  GFswitch_sub = n.subscribe<std_msgs::Bool>(id + "/gfswitch", 100, GFswitch_Callback);
+  mav_pub = n.advertise<mavros_msgs::AttitudeTarget>(id + "/mavros/setpoint_raw/attitude", 10);
+  control_pub = n.advertise<geometry_msgs::Vector3Stamped>(id + "/control_force", 10);
+  feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>(id + "/feedback", 10);
+  arming_client = n.serviceClient<mavros_msgs::CommandBool>(id + "/mavros/cmd/arming");
+  set_mode_client = n.serviceClient<mavros_msgs::SetMode>(id + "/mavros/set_mode");
+  waypoint_sub = n.subscribe<geometry_msgs::PoseArray>(id + "/waypoints_publisher", 10, waypoint_cb);
 
   ros::Rate loop_rate(1000);
   while(ros::ok() && !current_state.connected){
