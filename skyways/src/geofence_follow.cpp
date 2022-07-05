@@ -80,7 +80,7 @@ class Autopilot
 class StateMonitor //For state feedbacks
 {
     public:
-    bool switched;
+    bool switched = false;
     mavros_msgs::State state;
     geometry_msgs::PoseArray waypoints;
     geometry_msgs::Vector3 position, velocity;
@@ -112,6 +112,7 @@ class StateMonitor //For state feedbacks
 
     void velocity_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
     {
+        //Get velocity feedback
         velocity.x = msg->twist.linear.x; 
         velocity.y = msg->twist.linear.y; 
         velocity.z = msg->twist.linear.z;
@@ -139,13 +140,6 @@ int main(int argc, char **argv){
     ros::NodeHandle nh; //Create object for node
     StateMonitor stateMt; //Create object for state feedbacks
     Autopilot offb_ctl; //Create object for offboard control
-    geometry_msgs::Vector3 net_F, e3, force, feedback, acceleration, acceleration_d, position_d, position, Position, velocity, velocity_d;
-    std_msgs::Bool switch_status;
-    int i_wp;
-    double F_t, phi_d, theta_d, psi_d = 0, theta = 0, curr_wp[2], nxt_wp[2], altitude_d;
-    double wp[100][2], Gwp[100][2];
-    double g = 9.81, m_q = 2.9, force_scaling_factor = 0.0261, s_d = 3, R = 1, d1, d2, apf_y1 = -1, apf_y2 = 1, kp_apf = 1, kd_apf = 1, kp_tan = 3, kd_tan = 3, k_p = 1.5, k_d = 1.5;//Constants
-    position_d.x = 0;
 
     ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>
             (id + "/mavros/state", 10, &StateMonitor::state_cb, &stateMt); //Subscribe to state feedbacks
@@ -171,38 +165,42 @@ int main(int argc, char **argv){
             (id + "/mavros/set_mode"); //Create object for set mode service
     ros::Rate rate(20.0); //Set the rate of the loop
 
+    //Declare all necessary variables
+    geometry_msgs::PoseArray waypoints_global, waypoints;
+    geometry_msgs::Vector3 net_F, e3, force, feedback, acceleration, acceleration_d, position_d, position, Position, velocity, velocity_d;
+    int i_wp = 0; //waypoint index
+    double F_t, phi_d, theta_d, psi_d = 0, theta = 0, d1, d2, curr_wp[2], nxt_wp[2], altitude_d;
+    double g = 9.81, m_q = 2.9, force_scaling_factor = 0.0261, s_d = 3, R = 1, apf_y1 = -1, apf_y2 = 1, kp_apf = 1, kd_apf = 1, kp_tan = 3, kd_tan = 3, k_p = 1.5, k_d = 1.5;//Constants
+    position_d.x = 0;
+    altitude_d = 5;
+    velocity_d.x = 0;
+
     // Get the setpoints from ROS 2 topic
-    geometry_msgs::PoseArray waypoints;
-    while(ros::ok() && waypoints.poses.size()==0)
+    while(ros::ok() && waypoints_global.poses.size()==0)
     {
-        waypoints = stateMt.waypoints;
+        waypoints_global = stateMt.waypoints;
         ROS_INFO("Waiting for waypoints");
         ros::spinOnce();
         rate.sleep();
     }
-    int size = waypoints.poses.size(); //Get number of waypoints
-    ROS_INFO("%d Waypoints received", size);
+    ROS_INFO("%d Waypoints received", (int)waypoints_global.poses.size());
     
-    for (int i=0; i<size; i++)
-    {
-      Gwp[i][0] = waypoints.poses[i].position.x;
-      Gwp[i][1] = waypoints.poses[i].position.y;
-    }
-    stateMt.WGS84Reference[0] = Gwp[0][0];
-    stateMt.WGS84Reference[1] = Gwp[0][1];
+    stateMt.WGS84Reference[0] = waypoints_global.poses[0].position.x;
+    stateMt.WGS84Reference[1] = waypoints_global.poses[0].position.y;
     
-    for(int i=1; i<size; i++){
-      stateMt.WGS84Position = {Gwp[i][0], Gwp[i][1]};
+    waypoints.poses.resize(waypoints_global.poses.size());
+    for(int i=1; i<waypoints_global.poses.size(); i++){
+      stateMt.WGS84Position = {waypoints_global.poses[i].position.x, waypoints_global.poses[i].position.y};
       stateMt.result = {wgs84::toCartesian(stateMt.WGS84Reference, stateMt.WGS84Position)};
-      wp[i][0] = stateMt.result[0]; 
-      wp[i][1] = stateMt.result[1];
-      ROS_INFO("%f %f", wp[i][0], wp[i][1]);
+      waypoints.poses[i].position.x = stateMt.result[0]; 
+      waypoints.poses[i].position.y = stateMt.result[1];
+      ROS_INFO("%f %f", waypoints.poses[i].position.x, waypoints.poses[i].position.y);
     }
     
-    curr_wp[0] = wp[0][0]; 
-    curr_wp[1] = wp[0][1]; 
-    nxt_wp[0] = wp[1][0]; 
-    nxt_wp[1] = wp[1][1];
+    curr_wp[0] = waypoints.poses[0].position.x; 
+    curr_wp[1] = waypoints.poses[0].position.y;
+    nxt_wp[0] = waypoints.poses[1].position.x;
+    nxt_wp[1] = waypoints.poses[1].position.y;
     theta = atan2((nxt_wp[1]-curr_wp[1]),(nxt_wp[0]-curr_wp[0]));
     
     // wait for FCU connection
@@ -241,7 +239,7 @@ int main(int argc, char **argv){
         rate.sleep();
     }
     
-    // Loop to send the setpoints to the vehicle via MAVROS
+    // Loop to calculate and send attitude target to the vehicle via MAVROS
     int n = (int)waypoints.poses.size();
     while(ros::ok()){
         if(position_d.x < sqrt((curr_wp[0]-nxt_wp[0])*(curr_wp[0]-nxt_wp[0])+(curr_wp[1]-nxt_wp[1])*(curr_wp[1]-nxt_wp[1]))){
@@ -260,11 +258,14 @@ int main(int argc, char **argv){
         if(abs(position.x-position_d.x)<0.3){
           i_wp++;
           if(i_wp<6){
-            curr_wp[0] = wp[i_wp][0]; curr_wp[1] = wp[i_wp][1];
-            nxt_wp[0] = wp[i_wp+1][0]; nxt_wp[1] = wp[i_wp+1][1];
+            curr_wp[0] = waypoints.poses[i_wp].position.x;
+            curr_wp[1] = waypoints.poses[i_wp].position.y;
+            nxt_wp[0] = waypoints.poses[i_wp+1].position.x;; 
+            nxt_wp[1] = waypoints.poses[i_wp+1].position.y;
             theta = atan2((nxt_wp[1]-curr_wp[1]),(nxt_wp[0]-curr_wp[0]));
             position_d.x = 0;
-          }else{
+          }
+          else{
             break;
           }
         }
