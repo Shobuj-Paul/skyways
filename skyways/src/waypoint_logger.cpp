@@ -1,6 +1,5 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
-#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -15,7 +14,7 @@ class NavSatSubscriber : public rclcpp::Node
                     char ch = 'y';
                     while(ch!='n')
                     {
-                        WaypointLogger << msg->latitude << " " << msg->longitude << endl;
+                        WaypointLogger << msg->latitude << endl << msg->longitude << endl;
                         cout<<"Log another waypoint (y/n)? ";
                         cin>>ch;
                     }

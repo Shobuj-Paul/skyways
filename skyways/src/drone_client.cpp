@@ -58,10 +58,10 @@ int main(int argc, char **argv)
       packet.corridor_radius = result.get()->corridor_radius; //Get the corridor radius from the response.
       packet.lane_id = result.get()->lane_id; //Get the lane ID from the response.
       packet.altitude = result.get()->altitude; //Get the altitude from the response.
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Velocity Magnitude: %f", result.get()->vel_mag);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Geofence Radius: %f", result.get()->geofence_radius);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Corridor Radius: %f", result.get()->corridor_radius);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Altitude: %d", result.get()->altitude);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Velocity Magnitude: %f", packet.vel_mag);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Geofence Radius: %f", packet.geofence_radius);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Corridor Radius: %f", packet.corridor_radius);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Altitude: %f", packet.altitude);
       auto n = packet.waypoints.poses.size(); //Get the number of waypoints.
       for(int i=0; i<(int)n; i++) //Log the waypoints in the terminal
       {
