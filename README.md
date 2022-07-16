@@ -47,8 +47,9 @@ mkdir -p colcon_ws/src
 source /opt/ros/noetic/setup.bash
 cd ~/catkin_ws/src
 git clone https://github.com/Shobuj-Paul/skyways.git
+cd skyways
 git checkout ros-1
-cd ..
+cd ../..
 catkin build
 ```
 
@@ -57,8 +58,9 @@ catkin build
 source /opt/ros/foxy/setup.bash
 cd ~/colcon_ws/src
 git clone https://github.com/Shobuj-Paul/skyways.git
+cd skyways
 git checkout ros-2
-cd ..
+cd ../..
 colcon build --symlink-install
 ```
 

@@ -87,7 +87,7 @@ class stateMonitor //For state feedbacks
 
 int main(int argc, char **argv){
     ros::init(argc, argv, "setpoint_mission");
-    if(argc != 2) //madatory condition to set Vehicle ID
+    if(argc != 2) //mandatory condition to set Vehicle ID
     {
         ROS_ERROR("Usage: setpoint_mission <vehicle_id>");
         return 1;

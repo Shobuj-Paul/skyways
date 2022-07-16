@@ -17,12 +17,13 @@
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Bool.h>
 #include <skyways/WGS84toCartesian.hpp>
+#include <skyways/DataPacketResponse.h>
 
 using namespace std;
 
 int i_wp = 0, GFswitch = 0, ofb_switch;
 double xq, yq, zq, vxq, vyq, vzq, phi_q, theta_q, psi_q;
-double p_xq_d = 0, yq_d = 0, zq_d = 5, phi_d, theta_d, psi_d = 0, s_d = 3, vyq_d = 0, vzq_d = 0;
+double p_xq_d = 0, yq_d = 0, zq_d, phi_d, theta_d, psi_d = 0, s_d, vyq_d = 0, vzq_d = 0;
 double p_xq, p_yq, P_xq, P_yq, p_vxq, p_vyq, p_vxq_d = 0, s, p_a_x, p_a_y, theta = 0, R = 1, d1, d2, apf_y1 = -1, apf_y2 = 1, kp_apf = 1, kd_apf = 1, kp_tan = 3, kd_tan = 3;
 double F_t, g = 9.81, m_q = 2.9, force_scaling_factor = 0.0261;
 double k_p = 1.5, k_d = 1.5;
@@ -33,7 +34,7 @@ std::array<double, 2> result, WGS84Position, WGS84Reference{0, 0};
 geometry_msgs::Vector3 e3, aq_d, net_F;
 geometry_msgs::Vector3Stamped force;
 geometry_msgs::Vector3Stamped fd_bck;
-geometry_msgs::PoseArray waypoints;
+skyways::DataPacketResponse packet;
 
 mavros_msgs::State current_state;
 mavros_msgs::AttitudeTarget acc;
@@ -75,14 +76,14 @@ void GFswitch_Callback(std_msgs::Bool Data){
   }
 }
 
-void waypoint_cb(const geometry_msgs::PoseArray::ConstPtr& msg){
-    waypoints = *msg; //getting setpoints
+void packet_cb(const skyways::DataPacketResponse::ConstPtr& msg){
+    packet = *msg; //getting setpoints
 }
 
 int main(int argc, char **argv){
   ros::init(argc, argv, "ofb_apf1");
   ros::NodeHandle n;
-  ros::Subscriber quad_pos, quad_twist, state_sub, quad_Gpos, GFswitch_sub, waypoint_sub;
+  ros::Subscriber quad_pos, quad_twist, state_sub, quad_Gpos, GFswitch_sub, packet_sub;
   ros::Publisher mav_pub, control_pub, feedback_pub;
   ros::ServiceClient arming_client, set_mode_client;
   if(argc!=2)
@@ -95,13 +96,13 @@ int main(int argc, char **argv){
   quad_Gpos = n.subscribe(id + "/mavros/global_position/global", 1, GposCallback);
   quad_twist = n.subscribe(id + "/mavros/local_position/velocity_local", 1, TwistCallback);
   state_sub = n.subscribe<mavros_msgs::State>(id + "/mavros/state", 100, state_cb);
-  GFswitch_sub = n.subscribe<std_msgs::Bool>(id + "/gfswitch", 100, GFswitch_Callback);
+  GFswitch_sub = n.subscribe<std_msgs::Bool>("/gfswitch", 100, GFswitch_Callback);
   mav_pub = n.advertise<mavros_msgs::AttitudeTarget>(id + "/mavros/setpoint_raw/attitude", 10);
   control_pub = n.advertise<geometry_msgs::Vector3Stamped>(id + "/control_force", 10);
   feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>(id + "/feedback", 10);
   arming_client = n.serviceClient<mavros_msgs::CommandBool>(id + "/mavros/cmd/arming");
   set_mode_client = n.serviceClient<mavros_msgs::SetMode>(id + "/mavros/set_mode");
-  waypoint_sub = n.subscribe<geometry_msgs::PoseArray>(id + "/waypoints_publisher", 10, waypoint_cb);
+  packet_sub = n.subscribe<skyways::DataPacketResponse>(id + "/data_packet", 10, packet_cb);
 
   ros::Rate loop_rate(1000);
   while(ros::ok() && !current_state.connected){
@@ -109,23 +110,25 @@ int main(int argc, char **argv){
     loop_rate.sleep();
   }
 
-  while(waypoints.poses.size()==0)
+  while(packet.waypoints.poses.size()==0)
   {
+    s_d = packet.vel_mag;
+    zq_d = packet.altitude;
     ROS_INFO("Waiting for waypoints");
     ros::spinOnce();
     loop_rate.sleep();
   }
 
-  int size = waypoints.poses.size();
+  int size = packet.waypoints.poses.size();
   for (int i=0; i<size; i++)
   {
-    Gwp[i][0] = waypoints.poses[i].position.x;
-    Gwp[i][1] = waypoints.poses[i].position.y;
+    Gwp[i][0] = packet.waypoints.poses[i].position.x;
+    Gwp[i][1] = packet.waypoints.poses[i].position.y;
   }
   WGS84Reference[0] = Gwp[0][0];
   WGS84Reference[1] = Gwp[0][1];
 
-  for(int i=1; i<5; i++){
+  for(int i=1; i<size; i++){
     WGS84Position = {Gwp[i][0], Gwp[i][1]};
     result = {wgs84::toCartesian(WGS84Reference, WGS84Position)};
     wp[i][0] = result[0]; 
@@ -186,7 +189,7 @@ int main(int argc, char **argv){
       {
         if(abs(p_xq-p_xq_d)<0.3){
           i_wp++;
-          if(i_wp<6){
+          if(i_wp<size){
             curr_wp[0] = wp[i_wp][0]; curr_wp[1] = wp[i_wp][1];
             nxt_wp[0] = wp[i_wp+1][0]; nxt_wp[1] = wp[i_wp+1][1];
             theta = atan2((nxt_wp[1]-curr_wp[1]),(nxt_wp[0]-curr_wp[0]));
