@@ -10,30 +10,31 @@ void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std:
 {
     if (request->vehicle_id == "drone1") 
     {
-        ifstream WaypointReader("../text_files/WaypointLog.txt");
+        RCLCPP_INFO(rclcpp::get_logger("received"), "Vehicle ID: %s", request->vehicle_id.c_str());
+        // Read waypoints from text file and log them in terminal
+        ifstream WaypointReader("src/skyways/text_files/WaypointLog.txt");
         string line;
         int lines;
-        for(lines = 0; std::getline(WaypointReader,line); lines++);
+        for(lines = 0; getline(WaypointReader,line); lines++);
+        RCLCPP_INFO(rclcpp::get_logger("received"), "Waypoints Extracted: %d", lines);
+        WaypointReader.clear();
+        WaypointReader.seekg(0);
         response->waypoints.poses.resize(lines);
-        for(int i = 0; std::getline(WaypointReader,line); i++)
+        for(int i=0; getline(WaypointReader,line); i++)
         {
-            stringstream ss(line);
-            string waypoint;
-            ss>>waypoint;
-            response->waypoints.poses[i].position.x = stod(waypoint);
-            ss>>waypoint;
-            response->waypoints.poses[i].position.y = stod(waypoint);
+            istringstream iss(line);
+            double a, b;
+            if(!(iss >> a >> b))
+                break;
+            response->waypoints.poses[i].position.x = a;
+            response->waypoints.poses[i].position.y = b;
+            RCLCPP_INFO(rclcpp::get_logger("received"), "Waypoint GPS Coordinates %d: (%lf, %lf)", i+1, response->waypoints.poses[i].position.x, response->waypoints.poses[i].position.y);
         }
+        WaypointReader.close();
         response->vel_mag = 1.0;
         response->geofence_radius = 1.0;
         response->corridor_radius = 5.0;
         response->altitude = 5.0;
-
-        RCLCPP_INFO(rclcpp::get_logger("received"), "Vehicle ID: %s", request->vehicle_id.c_str());
-        for(int i=0; i<lines; i++)
-        {
-            RCLCPP_INFO(rclcpp::get_logger("received"), "Waypoint X: %lf Waypoint Y: %lf", response->waypoints.poses[i].position.x);
-        }
     }
     else 
     {

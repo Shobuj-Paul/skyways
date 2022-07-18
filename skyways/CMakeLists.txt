@@ -19,6 +19,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
@@ -32,6 +33,11 @@ ament_target_dependencies(drone_server
 add_executable(drone_client src/drone_client.cpp)
 ament_target_dependencies(drone_client
   rclcpp geometry_msgs std_msgs rosidl_default_runtime
+)
+
+add_executable(waypoint_logger src/waypoint_logger.cpp)
+ament_target_dependencies(waypoint_logger
+  rclcpp sensor_msgs rosidl_default_runtime
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
@@ -55,9 +61,11 @@ rosidl_target_interfaces(drone_server
 rosidl_target_interfaces(drone_client  
   ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
-install(TARGETS drone_server
- DESTINATION lib/${PROJECT_NAME})
-install(TARGETS drone_client
- DESTINATION lib/${PROJECT_NAME})
+install(TARGETS 
+    drone_server 
+    drone_client 
+    waypoint_logger
+    DESTINATION lib/${PROJECT_NAME}
+)
 
 ament_package()
