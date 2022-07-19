@@ -1,5 +1,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <skyways/srv/data_packet.hpp>
+#include <std_msgs/msg/float64.hpp>
+#include <geometry_msgs/msg/pose_array.hpp>
 #include <chrono>
 
 using namespace std::chrono_literals;
@@ -17,9 +19,14 @@ int main(int argc, char **argv)
   
   rclcpp::Node::SharedPtr node = rclcpp::Node::make_shared("drone_client"); //Create a node object.
   rclcpp::Client<skyways::srv::DataPacket>::SharedPtr client = node->create_client<skyways::srv::DataPacket>("drone_service"); //Create the client object.
-  rclcpp::Publisher<skyways::srv::DataPacket_Response>::SharedPtr publisher = node->create_publisher<skyways::srv::DataPacket_Response>(id + "/data_packet", 10); //Create a publisher object with specific vehicle ID.
   rclcpp::WallRate loop_rate(500ms); //Rate object for sleep time in the loop.
   
+  //Topic Publishers
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr vel_pub = node->create_publisher<std_msgs::msg::Float64>(id + "/data_packet/velocity", 10);  
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr geofence_pub = node->create_publisher<std_msgs::msg::Float64>(id + "/data_packet/geofence_radius", 10);  
+  rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr altitude_pub = node->create_publisher<std_msgs::msg::Float64>(id + "/data_packet/altitude", 10);
+  rclcpp::Publisher<geometry_msgs::msg::PoseArray>::SharedPtr waypoint_pub = node->create_publisher<geometry_msgs::msg::PoseArray>(id + "/data_packet/waypoints", 10);
+
   auto request = std::make_shared<skyways::srv::DataPacket::Request>(); //Request object for accessing request data packet.
   
   //Assign request data packet values.
@@ -48,24 +55,25 @@ int main(int argc, char **argv)
   }
 
   auto result = client->async_send_request(request);
-  skyways::srv::DataPacket_Response packet;
+  geometry_msgs::msg::PoseArray waypoints;
+  std_msgs::msg::Float64 vel_mag;
+  std_msgs::msg::Float64 altitude;
+  std_msgs::msg::Float64 geofence_radius;
   // Wait for the result.
   if (rclcpp::spin_until_future_complete(node, result) == rclcpp::FutureReturnCode::SUCCESS)
   {
-      packet.waypoints = result.get()->waypoints; //Get the waypoints from the response.
-      packet.vel_mag = result.get()->vel_mag; //Get the velocity magnitude from the response.
-      packet.geofence_radius = result.get()->geofence_radius; //Get the geofence radius from the response.
-      packet.corridor_radius = result.get()->corridor_radius; //Get the corridor radius from the response.
-      packet.lane_id = result.get()->lane_id; //Get the lane ID from the response.
-      packet.altitude = result.get()->altitude; //Get the altitude from the response.
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Velocity Magnitude: %f", packet.vel_mag);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Geofence Radius: %f", packet.geofence_radius);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Corridor Radius: %f", packet.corridor_radius);
-      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Altitude: %f", packet.altitude);
-      auto n = packet.waypoints.poses.size(); //Get the number of waypoints.
+      waypoints = result.get()->waypoints; //Get the waypoints from the response.
+      vel_mag.data = result.get()->vel_mag; //Get the velocity magnitude from the response.
+      geofence_radius.data = result.get()->geofence_radius; //Get the geofence radius from the response.
+      altitude.data = result.get()->altitude; //Get the altitude from the response.
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Velocity Magnitude: %f", vel_mag.data);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Geofence Radius: %f", geofence_radius.data);
+      RCLCPP_INFO(rclcpp::get_logger("recieved"), "Altitude: %f", altitude.data);
+
+      auto n = waypoints.poses.size(); //Get the number of waypoints.
       for(int i=0; i<(int)n; i++) //Log the waypoints in the terminal
       {
-        RCLCPP_INFO(rclcpp::get_logger("received"), "Waypoint %d: %f %f %f", i, packet.waypoints.poses[i].position.x, packet.waypoints.poses[i].position.y, packet.waypoints.poses[i].position.z);
+        RCLCPP_INFO(rclcpp::get_logger("received"), "Waypoint %d: %f %f %f", i+1, waypoints.poses[i].position.x, waypoints.poses[i].position.y, waypoints.poses[i].position.z);
       }
   } 
   else 
@@ -77,7 +85,10 @@ int main(int argc, char **argv)
   {
     RCLCPP_INFO(rclcpp::get_logger("publisher"), "Publishing waypoints on topic waypoints_publisher");
     try {
-      publisher->publish(packet);
+      vel_pub->publish(vel_mag);
+      geofence_pub->publish(geofence_radius);
+      altitude_pub->publish(altitude);
+      waypoint_pub->publish(waypoints);
       rclcpp::spin_some(node);
     } 
     catch (const std::exception & e) {
