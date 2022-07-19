@@ -16,8 +16,9 @@
 #include <geometry_msgs/PoseArray.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float64.h>
+#include <geometry_msgs/PoseArray.h>
 #include <skyways/WGS84toCartesian.hpp>
-#include <skyways/DataPacketResponse.h>
 
 class Autopilot
 {   
@@ -80,9 +81,10 @@ class StateMonitor
     public:
     mavros_msgs::State state;
     geometry_msgs::Vector3 position, velocity;
-    skyways::DataPacketResponse packet;
+    geometry_msgs::PoseArray waypoints;
     bool switched = false;
     double phi, theta, psi;
+    double vel_mag, altitude, geofence_radius;
     std::array<double, 2> result, WGS84Position, WGS84Reference;
 
     void state_cb(const mavros_msgs::State::ConstPtr& msg)
@@ -122,8 +124,20 @@ class StateMonitor
       }
     }
 
-    void packet_cb(const skyways::DataPacketResponse::ConstPtr& msg){
-        packet = *msg; //getting setpoints
+    void altitude_cb(const std_msgs::Float64::ConstPtr& msg){
+        altitude = msg->data;
+    }
+
+    void vel_cb(const std_msgs::Float64::ConstPtr& msg){
+        vel_mag = msg->data;
+    }
+
+    void geofence_cb(const std_msgs::Float64::ConstPtr& msg){
+        geofence_radius = msg->data;
+    }
+
+    void waypoint_cb(const geometry_msgs::PoseArray::ConstPtr& msg){
+        waypoints = *msg;
     }
 };
 
@@ -154,46 +168,52 @@ int main(int argc, char **argv)
     std::string id = argv[1];
 
     ros::Subscriber position_sub = n.subscribe<nav_msgs::Odometry>
-          (id + "/mavros/global_position/local", 1, &StateMonitor::pos_cb, &stateMt);
+            (id + "/mavros/global_position/local", 1, &StateMonitor::pos_cb, &stateMt);
     ros::Subscriber gps_sub = n.subscribe<sensor_msgs::NavSatFix>
-          (id + "/mavros/global_position/global", 1, &StateMonitor::gps_cb, &stateMt);
+            (id + "/mavros/global_position/global", 1, &StateMonitor::gps_cb, &stateMt);
     ros::Subscriber velocity_sub = n.subscribe<geometry_msgs::TwistStamped>
-          (id + "/mavros/local_position/velocity_local", 1, &StateMonitor::velocity_cb, &stateMt);
+            (id + "/mavros/local_position/velocity_local", 1, &StateMonitor::velocity_cb, &stateMt);
     ros::Subscriber state_sub = n.subscribe<mavros_msgs::State>
-          (id + "/mavros/state", 100, &StateMonitor::state_cb, &stateMt);
+            (id + "/mavros/state", 100, &StateMonitor::state_cb, &stateMt);
     ros::Subscriber switch_sub = n.subscribe<std_msgs::Bool>
-          ("/gfswitch", 100, &StateMonitor::switch_cb, &stateMt);
-    ros::Subscriber packet_sub = n.subscribe<skyways::DataPacketResponse>
-          (id + "/data_packet", 10, &StateMonitor::packet_cb, &stateMt);
+            ("/gfswitch", 100, &StateMonitor::switch_cb, &stateMt);
+    ros::Subscriber waypoint_sub = n.subscribe<geometry_msgs::PoseArray>
+            (id + "/data_packet/waypoints", 10, &StateMonitor::waypoint_cb, &stateMt);
+    ros::Subscriber altitude_sub = n.subscribe<std_msgs::Float64>
+            (id + "/data_packet/altitide", 10, &StateMonitor::altitude_cb, &stateMt);
+    ros::Subscriber geofence_sub = n.subscribe<std_msgs::Float64>
+            (id + "/data_packet/geofence_radius", 10, &StateMonitor::geofence_cb, &stateMt);
+    ros::Subscriber vel_sub = n.subscribe<std_msgs::Float64>
+            (id + "/data_packet/velocity", 10, &StateMonitor::vel_cb, &stateMt);
     ros::Publisher attitude_pub = n.advertise<mavros_msgs::AttitudeTarget>
-          (id + "/mavros/setpoint_raw/attitude", 10);
+            (id + "/mavros/setpoint_raw/attitude", 10);
     ros::Publisher force_pub = n.advertise<geometry_msgs::Vector3Stamped>
-        (id + "/control_force", 10);
+           (id + "/control_force", 10);
     ros::Publisher feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>
-          (id + "/feedback", 10);
+           (id + "/feedback", 10);
     ros::ServiceClient arming_client = n.serviceClient<mavros_msgs::CommandBool>
-          (id + "/mavros/cmd/arming");
+           (id + "/mavros/cmd/arming");
     ros::ServiceClient set_mode_client = n.serviceClient<mavros_msgs::SetMode>
-          (id + "/mavros/set_mode");
+            (id + "/mavros/set_mode");
     ros::Rate rate(1000);
 
     // Get the data packet parameters and waypoints
-    while(stateMt.packet.waypoints.poses.size()==0)
+    while(stateMt.waypoints.poses.size()==0)
     {
-      speed_d = stateMt.packet.vel_mag;
-      altitude_d = stateMt.packet.altitude;
-      R = stateMt.packet.geofence_radius;
+      speed_d = stateMt.vel_mag;
+      altitude_d = stateMt.altitude;
+      R = stateMt.geofence_radius;
       ROS_INFO("Waiting for waypoints");
       ros::spinOnce();
       rate.sleep();
     }
 
-    int size = stateMt.packet.waypoints.poses.size();
+    int size = stateMt.waypoints.poses.size();
     waypoints_global.poses.resize(size);
     for (int i=0; i<size; i++)
     {
-      waypoints_global.poses[i].position.x = stateMt.packet.waypoints.poses[i].position.x;
-      waypoints_global.poses[i].position.y = stateMt.packet.waypoints.poses[i].position.y;
+      waypoints_global.poses[i].position.x = stateMt.waypoints.poses[i].position.x;
+      waypoints_global.poses[i].position.y = stateMt.waypoints.poses[i].position.y;
     }
     
     WGS84Reference[0] = waypoints_global.poses[0].position.x;

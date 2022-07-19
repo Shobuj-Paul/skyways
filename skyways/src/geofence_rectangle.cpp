@@ -16,8 +16,9 @@
 #include <geometry_msgs/PoseArray.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Float64.h>
+#include <geometry_msgs/PoseArray.h>
 #include <skyways/WGS84toCartesian.hpp>
-#include <skyways/DataPacketResponse.h>
 
 using namespace std;
 
@@ -34,7 +35,9 @@ std::array<double, 2> result, WGS84Position, WGS84Reference{0, 0};
 geometry_msgs::Vector3 e3, aq_d, net_F;
 geometry_msgs::Vector3Stamped force;
 geometry_msgs::Vector3Stamped fd_bck;
-skyways::DataPacketResponse packet;
+
+double altitude, vel_mag, geofence_radius;
+geometry_msgs::PoseArray waypoints;
 
 mavros_msgs::State current_state;
 mavros_msgs::AttitudeTarget acc;
@@ -76,14 +79,27 @@ void GFswitch_Callback(std_msgs::Bool Data){
   }
 }
 
-void packet_cb(const skyways::DataPacketResponse::ConstPtr& msg){
-    packet = *msg; //getting setpoints
+void altitude_cb(const std_msgs::Float64::ConstPtr& msg){
+    altitude = msg->data;
 }
 
-int main(int argc, char **argv){
+void vel_cb(const std_msgs::Float64::ConstPtr& msg){
+    vel_mag = msg->data;
+}
+
+void geofence_cb(const std_msgs::Float64::ConstPtr& msg){
+    geofence_radius = msg->data;
+}
+
+void waypoint_cb(const geometry_msgs::PoseArray::ConstPtr& msg){
+    waypoints = *msg;
+}
+
+int main(int argc, char **argv)
+{
   ros::init(argc, argv, "ofb_apf1");
   ros::NodeHandle n;
-  ros::Subscriber quad_pos, quad_twist, state_sub, quad_Gpos, GFswitch_sub, packet_sub;
+  ros::Subscriber quad_pos, quad_twist, state_sub, quad_Gpos, GFswitch_sub, waypoint_sub, altitude_sub, vel_sub, geofence_sub;
   ros::Publisher mav_pub, control_pub, feedback_pub;
   ros::ServiceClient arming_client, set_mode_client;
   if(argc!=2)
@@ -102,7 +118,10 @@ int main(int argc, char **argv){
   feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>(id + "/feedback", 10);
   arming_client = n.serviceClient<mavros_msgs::CommandBool>(id + "/mavros/cmd/arming");
   set_mode_client = n.serviceClient<mavros_msgs::SetMode>(id + "/mavros/set_mode");
-  packet_sub = n.subscribe<skyways::DataPacketResponse>(id + "/data_packet", 10, packet_cb);
+  waypoint_sub = n.subscribe<geometry_msgs::PoseArray>(id + "/data_packet/waypoints", 10, waypoint_cb);
+  altitude_sub = n.subscribe<std_msgs::Float64>(id + "/data_packet/altitide", 10, altitude_cb);
+  geofence_sub = n.subscribe<std_msgs::Float64>(id + "/data_packet/geofence_radius", 10, geofence_cb);
+  vel_sub = n.subscribe<std_msgs::Float64>(id + "/data_packet/velocity", 10, vel_cb);
 
   ros::Rate loop_rate(1000);
   while(ros::ok() && !current_state.connected){
@@ -110,20 +129,20 @@ int main(int argc, char **argv){
     loop_rate.sleep();
   }
 
-  while(packet.waypoints.poses.size()==0)
+  while(waypoints.poses.size()==0)
   {
-    s_d = packet.vel_mag;
-    zq_d = packet.altitude;
+    s_d = vel_mag;
+    zq_d = altitude;
     ROS_INFO("Waiting for waypoints");
     ros::spinOnce();
     loop_rate.sleep();
   }
 
-  int size = packet.waypoints.poses.size();
+  int size = waypoints.poses.size();
   for (int i=0; i<size; i++)
   {
-    Gwp[i][0] = packet.waypoints.poses[i].position.x;
-    Gwp[i][1] = packet.waypoints.poses[i].position.y;
+    Gwp[i][0] = waypoints.poses[i].position.x;
+    Gwp[i][1] = waypoints.poses[i].position.y;
   }
   WGS84Reference[0] = Gwp[0][0];
   WGS84Reference[1] = Gwp[0][1];
