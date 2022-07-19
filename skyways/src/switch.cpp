@@ -8,7 +8,6 @@ class SwitchPublisher : public rclcpp::Node
     private:
         rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr publisher_;
         rclcpp::TimerBase::SharedPtr timer_;
-        size_t count;
     public:
         SwitchPublisher() : Node("switch_publisher")
         {
