@@ -40,6 +40,11 @@ ament_target_dependencies(waypoint_logger
   rclcpp sensor_msgs rosidl_default_runtime
 )
 
+add_executable(switch src/switch.cpp)
+ament_target_dependencies(switch
+  rclcpp sensor_msgs rosidl_default_runtime
+)
+
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/DataPacket.srv"
   DEPENDENCIES geometry_msgs std_msgs
@@ -65,6 +70,7 @@ install(TARGETS
     drone_server 
     drone_client 
     waypoint_logger
+    switch
     DESTINATION lib/${PROJECT_NAME}
 )
 
