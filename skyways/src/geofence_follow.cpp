@@ -187,9 +187,9 @@ int main(int argc, char **argv)
             (id + "/data_packet/velocity", 10, &StateMonitor::vel_cb, &stateMt);
     ros::Publisher attitude_pub = n.advertise<mavros_msgs::AttitudeTarget>
             (id + "/mavros/setpoint_raw/attitude", 10);
-    ros::Publisher force_pub = n.advertise<geometry_msgs::Vector3Stamped>
+    ros::Publisher force_pub = n.advertise<geometry_msgs::Vector3>
            (id + "/control_force", 10);
-    ros::Publisher feedback_pub = n.advertise<geometry_msgs::Vector3Stamped>
+    ros::Publisher feedback_pub = n.advertise<geometry_msgs::Vector3>
            (id + "/feedback", 10);
     ros::ServiceClient arming_client = n.serviceClient<mavros_msgs::CommandBool>
            (id + "/mavros/cmd/arming");

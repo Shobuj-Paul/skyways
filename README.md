@@ -81,14 +81,27 @@ You can check your variable using this command.
 echo $DRONE_ID
 ```
 
-## Drone Flight
-> _Currently work going on to integrate a startup script to avoid going into all this trouble_
+## Drone Flight Setup
+> This manual setup is no longer necessary, you can follow the instructions given in the next part to automate this process.
 
+- Make sure that the onboard computer has permission to read and write to /dev/ttyACM0 port. If that is not the case, you can set permission using the following command.
+```bash
+sudo chmod 777 /dev/ttyACM0
+```
+This is done manually and is not permanent, each login requires you to do this manually. It is better to add yourself to dialout group.
+```bash
+usermod -a -G dialout $USER
+sudo adduser $USER
+```
+For Nvidia development boards this alone does not work. You need to set `udev` rules.
+```bash
+sudo echo 'ACTION=="add", SUBSYSTEM=="usb", ATTRS{idVendor}=="09cb", OWNER=$USER, MODE="0777", GROUP="nvidia"' >> /etc/udev/rules.d/50-usb.rules
+```
+Logout and login again for changes to take effect.
 - Open up 4 terminal windows.
 - Source ROS 1. Start MAVROS connection to PX4. Make sure the PX4 controller (Pixhawk or Cube) is connected via serial to USB port on the onboard computer.
 ```bash
 noetic
-sudo chmod 777 /dev/ttyACM0
 roslaunch skyways px4.launch ID:=$DRONE_ID fcu_url:="/dev/ttyACM0"
 ```
 - Source ROS 1. Run your control code.
@@ -105,9 +118,24 @@ ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
 - Source ROS 2. Run ROS 2 client for sending flight request.
 ```bash
 foxy
-ros2 run skyways drone_client $DRONE_ID 0.0 0.0 0.0 0.0 0.0 0.0
+ros2 run skyways drone_client $DRONE_ID
 ```
-The last six arguments are the x-y-z components of first the start and then end points.
+
+## Drone Flight Setup on Startup
+- Enable automatic login on Ubuntu from settings.
+- Add terminal as a start up process in `Startup Applications` with the following command.
+```bash
+gnome-terminal
+```
+- Add the following line to the end of your ~/.bashrc file.
+```bash
+source ~/colcon_ws/src/skyways/scripts.startup.sh
+```
+- Reboot. You can check on your Ground Station PC whether the topics are broadcasted via this command.
+```bash
+foxy
+ros2 topic list
+```
 
 ## Ground Station Command
 - Clone the repository in a ROS 2 workspace on your ground station and build.
@@ -116,7 +144,9 @@ source /opt/ros/foxy/setup.bash
 mkdir -p colcon_ws/src
 cd colcon_ws/src
 git clone https://github.com/Shobuj-Paul/skyways.git
-cd ..
+cd skyways
+git checkout ros-2
+cd ../..
 colcon build --symlink-install
 ```
 - Start the ROS 2 server on Ground Station.
@@ -126,3 +156,5 @@ ros2 run skyways drone_server
 ```
 
 ## Development
+- All online flight behaviors need to be programmed in ROS 1 package.
+- All offline flight planning needs to programmed in ROS 2 package, within the drone_server.cpp file, `void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std::shared_ptr<skyways::srv::DataPacket::Response> response)` function.
