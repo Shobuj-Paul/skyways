@@ -149,6 +149,11 @@ git checkout ros-2
 cd ../..
 colcon build --symlink-install
 ```
+- You can log waypoints from the drone using the following command
+```bash
+ros2 run skyways waypoint_logger <Drone ID>
+```
+
 - Start the ROS 2 server on Ground Station.
 ```bash
 foxy
