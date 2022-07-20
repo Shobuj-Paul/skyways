@@ -35,7 +35,7 @@ int main(int argc, char * argv[])
     rclcpp::spin(node);
     RCLCPP_INFO(rclcpp::get_logger("check"), "Latitude: %lf Longitude: %lf", node.get()->lat, node.get()->lon);
     
-    ofstream WaypointLogger("src/skyways/text_files/WaypointLog.txt", ios_base::app);
+    ofstream WaypointLogger("colcon_ws/src/skyways/files/WaypointLog.txt", ios_base::app);
     WaypointLogger << node.get()->lat << " " << node.get()->lon << endl;
     WaypointLogger.close();
 

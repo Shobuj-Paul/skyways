@@ -149,11 +149,17 @@ git checkout ros-2
 cd ../..
 colcon build --symlink-install
 ```
+- You can log waypoints from the drone using the following command
+```bash
+ros2 run skyways waypoint_logger <Drone ID>
+```
+
 - Start the ROS 2 server on Ground Station.
 ```bash
 foxy
 ros2 run skyways drone_server
 ```
+> Both of the above commands need to be run from the home directory as they both save and read data from a text file whose path is pre-specified.
 
 ## Development
 - All online flight behaviors need to be programmed in ROS 1 package.

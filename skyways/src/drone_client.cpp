@@ -83,7 +83,7 @@ int main(int argc, char **argv)
 
   while(rclcpp::ok()) //Start publisher to publish waypoints for ROS 1 control node.
   {
-    RCLCPP_INFO(rclcpp::get_logger("publisher"), "Publishing waypoints on topic waypoints_publisher");
+    RCLCPP_INFO(rclcpp::get_logger("publisher"), "Publishing flight paramters on /data_packet topics");
     try {
       vel_pub->publish(vel_mag);
       geofence_pub->publish(geofence_radius);
