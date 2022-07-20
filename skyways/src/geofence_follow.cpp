@@ -195,7 +195,7 @@ int main(int argc, char **argv)
            (id + "/mavros/cmd/arming");
     ros::ServiceClient set_mode_client = n.serviceClient<mavros_msgs::SetMode>
             (id + "/mavros/set_mode");
-    ros::Rate rate(1000);
+    ros::Rate rate(10);
 
     // Get the data packet parameters and waypoints
     while(stateMt.waypoints.poses.size()==0)
