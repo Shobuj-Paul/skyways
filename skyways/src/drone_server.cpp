@@ -11,7 +11,8 @@ void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std:
     {
         RCLCPP_INFO(rclcpp::get_logger("received"), "Vehicle ID: %s", request->vehicle_id.c_str());
         // Read waypoints from text file and log them in terminal
-        ifstream WaypointReader("colcon_ws/src/skyways/files/WaypointLog.txt");
+        string home = getenv("HOME");
+        ifstream WaypointReader(home + "/colcon_ws/src/skyways/files/WaypointLog.txt");
         string line;
         int lines;
         for(lines = 0; getline(WaypointReader,line); lines++);

@@ -159,7 +159,6 @@ ros2 run skyways waypoint_logger <Drone ID>
 foxy
 ros2 run skyways drone_server
 ```
-> Both of the above commands need to be run from the home directory as they both save and read data from a text file whose path is pre-specified.
 
 ## Development
 - All online flight behaviors need to be programmed in ROS 1 package.

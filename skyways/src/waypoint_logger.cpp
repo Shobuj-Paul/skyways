@@ -31,11 +31,13 @@ int main(int argc, char * argv[])
         return 1;
     }
     string id = string(argv[1]);
+    string home = getenv("HOME");
     auto node = std::make_shared<NavSatSubscriber>(id);
+
     rclcpp::spin(node);
     RCLCPP_INFO(rclcpp::get_logger("check"), "Latitude: %lf Longitude: %lf", node.get()->lat, node.get()->lon);
     
-    ofstream WaypointLogger("colcon_ws/src/skyways/files/WaypointLog.txt", ios_base::app);
+    ofstream WaypointLogger(home + "/colcon_ws/src/skyways/files/WaypointLog.txt", ios_base::app);
     WaypointLogger << node.get()->lat << " " << node.get()->lon << endl;
     WaypointLogger.close();
 
