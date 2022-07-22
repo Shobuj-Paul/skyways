@@ -163,3 +163,9 @@ ros2 run skyways drone_server
 ## Development
 - All online flight behaviors need to be programmed in ROS 1 package.
 - All offline flight planning needs to programmed in ROS 2 package, within the drone_server.cpp file, `void data(const std::shared_ptr<skyways::srv::DataPacket::Request> request, std::shared_ptr<skyways::srv::DataPacket::Response> response)` function.
+
+## Network
+- To set up Wifi hotspot with Alfa Wifi router, connect the router and run the following command.
+```bash
+nmcli dev wifi hotspot ifname wlx00c0ca980d57 ssid alfa password "abcd1234" 
+```
