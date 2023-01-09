@@ -1,5 +1,11 @@
 # Drone Skyways
 
+[![GitHub issues](https://img.shields.io/github/issues/Shobuj-Paul/skyways?color=red&label=Issues&style=flat)](https://github.com/Shobuj-Paul/skyways/issues)
+[![GitHub license](https://img.shields.io/github/license/Shobuj-Paul/skyways?color=green&label=License&style=flat)](https://github.com/Shobuj-Paul/skyways/blob/main/LICENSE)
+![Ubuntu](https://img.shields.io/badge/Ubuntu%2020.04-%E2%9C%94-blue)
+![ROS Noetic](https://img.shields.io/badge/ROS%20Noetic-%E2%9C%94-blue)
+![Build Status](https://github.com/Shobuj-Paul/skyways/actions/workflows/ros-ci.yml/badge.svg)
+
 ## ROS Installation
 - Ensure that your onboard computer supports 64-bit Ubuntu 20.04, either server or desktop.
 - Download ROS 1 (Noetic) and ROS 2 (Foxy) from the links given below.
